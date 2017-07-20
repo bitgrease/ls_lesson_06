@@ -9,6 +9,9 @@
 # 9. If yes, go to #1
 # 10. Leave game
 DEBUG = false
+EMPTY_SQAURE = ' '
+COMPUTER_PIECE = 'O'
+PLAYER_PIECE = 'X'
 require 'irb'
 # use hash for board
 def prompt_user(str)
@@ -40,23 +43,35 @@ def initialize_board
 end
 
 def position_empty?(num, board)
-  board[num] == ' '
+  board[num] == EMPTY_SQAURE
 end
 
-def user_turn(board)
-  loop do 
-    prompt_user('Please choose where you want to place your mark [1-9]:')
+def empty_squares(board)
+  board.keys.select { |square| board[square] == EMPTY_SQAURE }
+end
+
+def player_places_piece!(board)
+  user_choice = ''
+  loop do
+    prompt_user("Choose a square (#{empty_squares(board).join(', ')}):")
     user_choice = gets.chomp
-    if (1..9).include?(user_choice.to_i) && position_empty?(user_choice.to_i, board)
-      board[user_choice.to_i] = 'X'
-      break
-    end
-    prompt_user('Position must be unoccupied and choice must be between 1-9.')
+    break if empty_squares(board).include? user_choice.to_i
+    prompt_user("Try again. Pick from #{empty_squares(board).join(', ')}.")
   end
+  board[user_choice.to_i] = PLAYER_PIECE
+end
+
+def computer_places_piece!(board)
+  board[empty_squares(board).sample] = 'O'
 end
 
 board = initialize_board
 
 display_board(board)
-user_turn(board)
+binding.irb if DEBUG
+player_places_piece!(board)
+display_board(board)
+puts 'Computer choses a square'
+sleep 1
+computer_places_piece!(board)
 display_board(board)
