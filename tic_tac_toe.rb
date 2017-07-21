@@ -5,8 +5,7 @@ ENOUGH_MOVES_FOR_WIN = 5
 TIE = false
 WINNING_POSITIONS = [[1, 2, 3], [4, 5, 6], [7, 8, 9],
                      [1, 4, 7], [2, 5, 8], [3, 6, 9],
-                     [1, 5, 9], [3, 6, 9]
-                    ]
+                     [1, 5, 9], [3, 6, 9]]
 
 def prompt_user(str)
   puts "=> #{str}"
@@ -61,7 +60,7 @@ def board_full?(board)
 end
 
 def number_squares_used(board)
-  board.values.select { |v| !v.eql? ' '}.size
+  board.values.select { |v| !v.eql? ' ' }.size
 end
 
 def someone_won?(board)
@@ -84,7 +83,7 @@ def calculate_winner(board)
   TIE
 end
 
-loop do 
+loop do
   board = initialize_board
 
   loop do
@@ -103,7 +102,7 @@ loop do
       break if someone_won?(board)
     end
   end
-  
+
   display_board(board)
   prompt_user "#{calculate_winner(board) || 'No one'} won. Play again? (y/n)"
   break unless gets.chomp.downcase.chr.eql? 'y'
