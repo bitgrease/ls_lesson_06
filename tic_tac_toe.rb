@@ -1,40 +1,13 @@
-1# 1. Display the initial board
-# 2. Ask user to mark a square
-# 3. Computer marks a square
-# 4. Display updated board state
-# 5. If winner, display winner
-# 6. If board is full, tie
-# 7. If no winner and board isn't full go back to 2
-# 8. Play again?
-# 9. If yes, go to #1
-# 10. Leave game
-
-## Change log
-## Removed predicate method to determine if square was empty
-## replaced binding.irb with pry
-##
-## FUTURE Improvements
-## Player will always have the final play if they start - no need for
-## computer to have a turn and THEN check for board full. After 9 moves, board is full
-## check for win if board is full and after every move after 5 (first chance for a win).
-## 
-## This would be a better approach I think when it's object oriented. The board object can
-## have an instance attribute for total_moves and enough moves to win.
-
-
-
-DEBUG = true
 EMPTY_SQUARE = ' '
 COMPUTER_PIECE = 'O'
 PLAYER_PIECE = 'X'
 ENOUGH_MOVES_FOR_WIN = 5
+TIE = false
 WINNING_POSITIONS = [[1, 2, 3], [4, 5, 6], [7, 8, 9],
                      [1, 4, 7], [2, 5, 8], [3, 6, 9],
                      [1, 5, 9], [3, 6, 9]
                     ]
 
-require 'pry'
-# use hash for board
 def prompt_user(str)
   puts "=> #{str}"
 end
@@ -42,6 +15,7 @@ end
 def display_board(board)
   system 'clear'
   system 'cls'
+  puts "You are #{PLAYER_PIECE} and Computer is #{COMPUTER_PIECE}."
   puts ''
   puts '     |     |'
   puts "  #{board[1]}  |  #{board[2]}  |  #{board[3]}"
@@ -91,17 +65,7 @@ def number_squares_used(board)
 end
 
 def someone_won?(board)
-  WINNING_POSITIONS.any? do |row_col_diag|
-    line = ''
-    counter = 0
-    
-    until counter.eql? row_col_diag.size
-      line << board[row_col_diag[counter]]
-      counter += 1
-    end
-
-    line.eql?('XXX') || line.eql?('OOO')
-  end
+  !!calculate_winner(board)
 end
 
 def calculate_winner(board)
@@ -117,7 +81,7 @@ def calculate_winner(board)
     return 'Computer' if line.eql?('OOO')
     return 'Player' if line.eql?('XXX')
   end
-  "No one"
+  TIE
 end
 
 loop do 
@@ -126,24 +90,21 @@ loop do
   loop do
     display_board(board)
     player_places_piece!(board)
-
     if number_squares_used(board) >= ENOUGH_MOVES_FOR_WIN
       break if someone_won?(board) || board_full?(board)
     end
-
     display_board(board)
 
     puts 'Computer choses a square'
     sleep 1
-    computer_places_piece!(board)
     display_board(board)
-
+    computer_places_piece!(board)
     if number_squares_used(board) >= ENOUGH_MOVES_FOR_WIN
       break if someone_won?(board)
     end
   end
   
-  winner = calculate_winner(board)
-  prompt_user "#{winner} won! Play again? (y/n)"
+  display_board(board)
+  prompt_user "#{calculate_winner(board) || 'No one'} won. Play again? (y/n)"
   break unless gets.chomp.downcase.chr.eql? 'y'
 end
