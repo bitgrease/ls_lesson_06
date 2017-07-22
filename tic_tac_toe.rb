@@ -12,8 +12,14 @@ def prompt_user(str)
 end
 
 def joinor(squares, separator=',', word='or')
-  num_string = squares.slice(0, squares.size - 1).join(separator + ' ')
-  num_string << "#{separator} #{word} #{squares.last}"
+  case squares.size
+  when 0 then ''
+  when 1 then squares.first
+  when 2 then squares.join(" #{word} ")
+  else
+    squares[-1] = "#{word} #{squares.last}"
+    squares.join(separator + ' ')
+  end
 end
 
 # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
