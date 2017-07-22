@@ -11,6 +11,11 @@ def prompt_user(str)
   puts "=> #{str}"
 end
 
+def joinor(squares, separator=',', word='or')
+  num_string = squares.slice(0, squares.size - 1).join(separator + ' ')
+  num_string << "#{separator} #{word} #{squares.last}"
+end
+
 # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
 def display_board(board)
   system 'clear'
@@ -45,10 +50,10 @@ end
 def player_places_piece!(board)
   user_choice = ''
   loop do
-    prompt_user("Choose a square (#{empty_squares(board).join(', ')}):")
+    prompt_user("Choose a square (#{joinor(empty_squares(board))}):")
     user_choice = gets.chomp
     break if empty_squares(board).include? user_choice.to_i
-    prompt_user("Try again. Pick from #{empty_squares(board).join(', ')}.")
+    prompt_user("Try again. Pick from #{joinor(empty_squares(board))}.")
   end
   board[user_choice.to_i] = PLAYER_PIECE
 end
