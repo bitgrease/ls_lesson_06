@@ -1,3 +1,4 @@
+require 'pry'
 EMPTY_SQUARE = ' '
 COMPUTER_PIECE = 'O'
 PLAYER_PIECE = 'X'
@@ -68,7 +69,8 @@ end
 
 def first_square_at_risk(board)
   WINNING_POSITIONS.each do |line|
-    if board.values_at(*line).count(PLAYER_PIECE) == 2
+    if board.values_at(*line).count(PLAYER_PIECE) == 2 && 
+       board.values_at(*line).include?(' ')
       position = line.select { |pos| board[pos].eql? ' ' }
       return position[0]
     end
