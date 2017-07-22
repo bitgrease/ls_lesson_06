@@ -11,6 +11,7 @@ def prompt_user(str)
   puts "=> #{str}"
 end
 
+# rubocop:disable Metrics/AbcSize, Metrics/MethodLength
 def display_board(board)
   system 'clear'
   system 'cls'
@@ -29,6 +30,7 @@ def display_board(board)
   puts '     |     |'
   puts ''
 end
+# rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
 def initialize_board
   new_board = {}
@@ -68,17 +70,12 @@ def someone_won?(board)
 end
 
 def calculate_winner(board)
-  WINNING_POSITIONS.each do |row_col_diag|
-    line = ''
-    counter = 0
-
-    until counter.eql? row_col_diag.size
-      line << board[row_col_diag[counter]]
-      counter += 1
+  WINNING_POSITIONS.each do |line|
+    if board.values_at(*line).count(PLAYER_PIECE) == 3
+      return 'Player'
+    elsif board.values_at(*line).count(COMPUTER_PIECE) == 3
+      return 'Computer'
     end
-
-    return 'Computer' if line.eql?('OOO')
-    return 'Player' if line.eql?('XXX')
   end
   TIE
 end
