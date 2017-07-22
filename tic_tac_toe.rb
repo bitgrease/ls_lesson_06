@@ -2,6 +2,7 @@ EMPTY_SQUARE = ' '
 COMPUTER_PIECE = 'O'
 PLAYER_PIECE = 'X'
 ENOUGH_MOVES_FOR_WIN = 5
+DEBUG = true
 TIE = false
 WINNING_POSITIONS = [[1, 2, 3], [4, 5, 6], [7, 8, 9],
                      [1, 4, 7], [2, 5, 8], [3, 6, 9],
@@ -65,8 +66,23 @@ def player_places_piece!(board)
   board[user_choice.to_i] = PLAYER_PIECE
 end
 
+def first_square_at_risk(board)
+  WINNING_POSITIONS.each do |line|
+    if board.values_at(*line).count(PLAYER_PIECE) == 2
+      position = line.select { |pos| board[pos].eql? ' ' }
+      return position[0]
+    end
+  end
+  nil
+end
+
 def computer_places_piece!(board)
-  board[empty_squares(board).sample] = COMPUTER_PIECE
+  defensive_move = first_square_at_risk(board)
+  if defensive_move
+    board[defensive_move] = COMPUTER_PIECE
+  else
+    board[empty_squares(board).sample] = COMPUTER_PIECE
+  end
 end
 
 def board_full?(board)
@@ -96,7 +112,6 @@ game_counter = computer_wins = player_wins = 0
 
 loop do
   board = initialize_board
-
 
   loop do
     display_board(board, player_wins, computer_wins)
@@ -132,9 +147,9 @@ loop do
   display_board(board, player_wins, computer_wins) # to update top of screen
 
   if game_counter < 5 || (computer_wins < 5 && player_wins < 5)
-      prompt_user 'Play again? (y/n)'  
-      break unless gets.chomp.downcase.chr.eql? 'y'
-  elsif player_wins >=5 || computer_wins >= 5
+    prompt_user 'Play again? (y/n)'
+    break unless gets.chomp.downcase.chr.eql? 'y'
+  elsif player_wins >= 5 || computer_wins >= 5
     if player_wins >= 5
       prompt_user 'You won the tournament!. Play another tourney (y/n)?'
     elsif computer_wins >= 5
