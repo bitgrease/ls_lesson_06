@@ -1,10 +1,10 @@
-require 'pry'
 EMPTY_SQUARE = ' '
 COMPUTER_PIECE = 'O'
 PLAYER_PIECE = 'X'
 ENOUGH_MOVES_FOR_WIN = 5
 DEBUG = true
 TIE = false
+CENTER = 5
 WINNING_POSITIONS = [[1, 2, 3], [4, 5, 6], [7, 8, 9],
                      [1, 4, 7], [2, 5, 8], [3, 6, 9],
                      [1, 5, 9], [3, 5, 7]]
@@ -25,11 +25,11 @@ def joinor(squares, separator=',', word='or')
 end
 
 # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
-def display_board(board, player_wins, computer_wins)
+def display_board(board, player_total, computer_total)
   system 'clear'
   system 'cls'
   puts "You are #{PLAYER_PIECE} and Computer is #{COMPUTER_PIECE}."
-  puts "Tournament Score: Player #{player_wins} - Computer #{computer_wins}"
+  puts "Tournament Score: Player #{player_total} - Computer #{computer_total}"
   puts ''
   puts '     |     |'
   puts "  #{board[1]}  |  #{board[2]}  |  #{board[3]}"
@@ -67,21 +67,35 @@ def player_places_piece!(board)
   board[user_choice.to_i] = PLAYER_PIECE
 end
 
-def first_square_at_risk(board)
-  WINNING_POSITIONS.each do |line|
-    if board.values_at(*line).count(PLAYER_PIECE) == 2 && 
-       board.values_at(*line).include?(' ')
-      position = line.select { |pos| board[pos].eql? ' ' }
-      return position[0]
-    end
+def find_at_risk_square(line, board)
+  if board.values_at(*line).count(PLAYER_PIECE) == 2
+    board.select { |k, v| line.include?(k) && v.eql?(EMPTY_SQUARE) }.keys.first
+  end
+end
+
+def computer_winning_move(line, board)
+  if board.values_at(*line).count(COMPUTER_PIECE) == 2 &&
+     board.values_at(*line).include?(EMPTY_SQUARE)
+    position = line.select { |pos| board[pos].eql? EMPTY_SQUARE }
+    return position[0]
   end
   nil
 end
 
 def computer_places_piece!(board)
-  defensive_move = first_square_at_risk(board)
-  if defensive_move
-    board[defensive_move] = COMPUTER_PIECE
+  square = nil
+  WINNING_POSITIONS.each do |line|
+    square = computer_winning_move(line, board)
+    break if square
+
+    square = find_at_risk_square(line, board)
+    break if square
+
+    square = CENTER if board[CENTER].eql? EMPTY_SQUARE
+  end
+
+  if square
+    board[square] = COMPUTER_PIECE
   else
     board[empty_squares(board).sample] = COMPUTER_PIECE
   end
@@ -110,54 +124,55 @@ def calculate_winner(board)
   TIE
 end
 
-game_counter = computer_wins = player_wins = 0
+game_counter = computer_total = player_total = 0
 
 loop do
   board = initialize_board
 
   loop do
-    display_board(board, player_wins, computer_wins)
+    display_board(board, player_total, computer_total)
     player_places_piece!(board)
     if number_squares_used(board) >= ENOUGH_MOVES_FOR_WIN
       break if someone_won?(board) || board_full?(board)
     end
-    display_board(board, player_wins, computer_wins)
+    display_board(board, player_total, computer_total)
 
     puts 'Computer choses a square'
     sleep 1
-    display_board(board, player_wins, computer_wins)
+    display_board(board, player_total, computer_total)
     computer_places_piece!(board)
     if number_squares_used(board) >= ENOUGH_MOVES_FOR_WIN
       break if someone_won?(board)
     end
   end
 
-  display_board(board, player_wins, computer_wins)
+  display_board(board, player_total, computer_total)
 
   winner = calculate_winner(board)
+
   case winner
   when 'Player'
-    player_wins += 1
+    player_total += 1
     game_counter += 1
   when 'Computer'
-    computer_wins += 1
+    computer_total += 1
     game_counter += 1
   end
 
   prompt_user "#{winner || 'No one'} won."
-  prompt_user "Player #{player_wins} - Computer #{computer_wins}"
-  display_board(board, player_wins, computer_wins) # to update top of screen
+  prompt_user "Player #{player_total} - Computer #{computer_total}"
+  display_board(board, player_total, computer_total) # to update top of screen
 
-  if game_counter < 5 || (computer_wins < 5 && player_wins < 5)
+  if game_counter < 5 || (computer_total < 5 && player_total < 5)
     prompt_user 'Play again? (y/n)'
     break unless gets.chomp.downcase.chr.eql? 'y'
-  elsif player_wins >= 5 || computer_wins >= 5
-    if player_wins >= 5
+  elsif player_total >= 5 || computer_total >= 5
+    if player_total >= 5
       prompt_user 'You won the tournament!. Play another tourney (y/n)?'
-    elsif computer_wins >= 5
+    elsif computer_total >= 5
       prompt_user 'Computer won the tournament. Play another tourney (y/n)?'
     end
     break unless gets.chomp.downcase.chr.eql? 'y'
-    game_counter = computer_wins = player_wins = 0
+    game_counter = computer_total = player_total = 0
   end
 end
