@@ -1,11 +1,10 @@
-FIRST_PLAYER = 'choose'
+FIRST_PLAYER = nil
 EMPTY_SQUARE = ' '
 PLAYER_PIECE = 'X'
 COMPUTER_PIECE = 'O'
 ENOUGH_MOVES_FOR_WIN = 5
 PLAYER = 'Player'
 COMPUTER = 'Computer'
-DEBUG = true
 TIE = false
 CENTER = 5
 WINNING_POSITIONS = [[1, 2, 3], [4, 5, 6], [7, 8, 9],
@@ -34,6 +33,7 @@ def display_board(board, player_one, player_two, game_score)
   puts "Player is #{PLAYER_PIECE} and Computer is #{COMPUTER_PIECE}."
   print "Tournament Score: #{player_one} #{game_score[player_one]}"
   puts " - #{player_two} #{game_score[player_two]}."
+  puts 'First player to five (5) wins!'
   puts ''
   puts '     |     |'
   puts "  #{board[1]}  |  #{board[2]}  |  #{board[3]}"
@@ -66,7 +66,7 @@ def player_places_piece!(board)
     prompt_user("Choose a square (#{joinor(empty_squares(board))}):")
     user_choice = gets.chomp
     break if empty_squares(board).include? user_choice.to_i
-    prompt_user("Try again. Pick from #{joinor(empty_squares(board))}.")
+    prompt_user('Invalid Choice!')
   end
   board[user_choice.to_i] = PLAYER_PIECE
 end
@@ -108,7 +108,7 @@ def computer_places_piece!(board)
 end
 
 def place_piece!(board, current_player)
-  if current_player.eql? 'Player'
+  if current_player.eql? PLAYER
     player_places_piece!(board)
   else
     computer_places_piece!(board)
@@ -120,7 +120,7 @@ def board_full?(board)
 end
 
 def number_squares_used(board)
-  board.values.select { |v| !v.eql? ' ' }.size
+  board.values.reject { |v| v.eql? ' ' }.size
 end
 
 def someone_won?(board)
@@ -130,43 +130,51 @@ end
 def calculate_winner(board)
   WINNING_POSITIONS.each do |line|
     if board.values_at(*line).count(PLAYER_PIECE) == 3
-      return 'Player'
+      return PLAYER
     elsif board.values_at(*line).count(COMPUTER_PIECE) == 3
-      return 'Computer'
+      return COMPUTER
     end
   end
   TIE
 end
 
+def calculate_tournament_winner(game_score)
+  if game_score[PLAYER] >= 5
+    PLAYER
+  elsif game_score[COMPUTER] >= 5
+    COMPUTER
+  end
+end
+
 def select_first_player
   first_player = ''
   loop do
-    prompt_user 'Please select first turn ("Player" or "Computer")'
-    first_player = gets.chomp.capitalize
-    break if %w[Player Computer].include? first_player
+    prompt_user 'Please select first turn ("P" for player or "C" for computer)'
+    first_player = gets.chomp.downcase
+    break if %w[p c].include? first_player
     prompt_user 'Invalid Choice!'
   end
 
-  if first_player.eql? 'Player'
-    return 'Player', 'Computer'
+  if first_player.eql? 'p'
+    return PLAYER, COMPUTER
   end
 
-  return 'Computer', 'Player'
+  return COMPUTER, PLAYER
 end
 
 def switch_current_player(current_player)
-  return 'Player' if current_player.eql? 'Computer'
-  'Computer'
+  return PLAYER if current_player.eql? COMPUTER
+  COMPUTER
 end
 
-game_score = { 'Player' => 0, 'Computer' => 0 }
+game_score = { PLAYER => 0, COMPUTER => 0 }
 
 system 'clear'
 system 'cls'
 player_one, player_two = if FIRST_PLAYER.eql? 'choose'
                            select_first_player
                          else
-                           'Player'
+                           [PLAYER, COMPUTER]
                          end
 current_player = player_one
 
@@ -185,23 +193,22 @@ loop do
   winner = calculate_winner(board)
   game_score[winner] += 1 if winner
 
-  prompt_user "#{winner || 'No one'} won."
   display_board(board, player_one, player_two, game_score)
+  prompt_user "#{winner || 'No one'} won."
   current_player = player_one
 
-  if game_score[player_one] < 5 && game_score[player_two] < 5
-    prompt_user 'Continue Tournament? (y/n)'
-    break unless gets.chomp.downcase.chr.eql? 'y'
-  elsif game_score[player_one] >= 5 || game_score[player_two] >= 5
-    if game_score['Player'] >= 5
+  tournament_winner = calculate_tournament_winner(game_score)
+  if tournament_winner
+    if tournament_winner.eql? PLAYER
       prompt_user 'You won the tournament!. Play another tourney (y/n)?'
-    elsif game_score['Computer'] >= 5
+    elsif tournament_winner.eql? COMPUTER
       prompt_user 'Computer won the tournament. Play another tourney (y/n)?'
     end
-
-    break unless gets.chomp.downcase.chr.eql? 'y'
-
     game_score.keys.each { |k| game_score[k] = 0 }
-    current_player = player_one
+  else
+    prompt_user 'Play again? (y/n)?'
   end
+  break unless gets.chomp.downcase.chr.eql? 'y'
+
+  current_player = player_one
 end
