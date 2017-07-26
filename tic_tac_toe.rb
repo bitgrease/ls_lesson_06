@@ -1,11 +1,11 @@
-FIRST_PLAYER = nil
+FIRST_PLAYER = 'choose'
 EMPTY_SQUARE = ' '
 PLAYER_PIECE = 'X'
 COMPUTER_PIECE = 'O'
 ENOUGH_MOVES_FOR_WIN = 5
+WIN_TOURNAMENT = 5
 PLAYER = 'Player'
 COMPUTER = 'Computer'
-TIE = false
 CENTER = 5
 WINNING_POSITIONS = [[1, 2, 3], [4, 5, 6], [7, 8, 9],
                      [1, 4, 7], [2, 5, 8], [3, 6, 9],
@@ -13,6 +13,10 @@ WINNING_POSITIONS = [[1, 2, 3], [4, 5, 6], [7, 8, 9],
 
 def prompt_user(str)
   puts "=> #{str}"
+end
+
+def clear_screen
+  system('clear') || system('cls')
 end
 
 def joinor(squares, separator=',', word='or')
@@ -28,8 +32,7 @@ end
 
 # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
 def display_board(board, player_one, player_two, game_score)
-  system 'clear'
-  system 'cls'
+  clear_screen
   puts "Player is #{PLAYER_PIECE} and Computer is #{COMPUTER_PIECE}."
   print "Tournament Score: #{player_one} #{game_score[player_one]}"
   puts " - #{player_two} #{game_score[player_two]}."
@@ -87,17 +90,13 @@ def computer_winning_move(line, board)
 end
 
 def computer_places_piece!(board)
-  square = nil
+  winning_square = at_risk_square = nil
   WINNING_POSITIONS.each do |line|
-    square = computer_winning_move(line, board)
-    break if square
+    winning_square = computer_winning_move(line, board) unless winning_square
+    at_risk_square = find_at_risk_square(line, board) unless at_risk_square
   end
 
-  WINNING_POSITIONS.each do |line|
-    square ||= find_at_risk_square(line, board)
-    break if square
-  end
-
+  square = winning_square || at_risk_square
   square ||= CENTER if board[CENTER].eql? EMPTY_SQUARE
 
   if square
@@ -135,13 +134,13 @@ def calculate_winner(board)
       return COMPUTER
     end
   end
-  TIE
+  nil
 end
 
 def calculate_tournament_winner(game_score)
-  if game_score[PLAYER] >= 5
+  if game_score[PLAYER] >= WIN_TOURNAMENT
     PLAYER
-  elsif game_score[COMPUTER] >= 5
+  elsif game_score[COMPUTER] >= WIN_TOURNAMENT
     COMPUTER
   end
 end
@@ -159,7 +158,7 @@ def select_first_player
     return PLAYER, COMPUTER
   end
 
-  return COMPUTER, PLAYER
+  [COMPUTER, PLAYER]
 end
 
 def switch_current_player(current_player)
@@ -167,10 +166,28 @@ def switch_current_player(current_player)
   COMPUTER
 end
 
+def user_y_or_n
+  entered_choice = ''
+  loop do
+    entered_choice = gets.chomp.downcase.chr
+    return entered_choice if %w[y n].include? entered_choice
+    prompt_user 'Invalid Choice. Choose "y" or "n".'
+  end
+end
+
+def display_winner_and_prompt_new_tourney(tournament_winner, game_score)
+  if tournament_winner.eql? PLAYER
+    prompt_user 'You won the tournament!.'
+  elsif tournament_winner.eql? COMPUTER
+    prompt_user 'Computer won the tournament.'
+  end
+  puts 'Play another tourney (y/n)?'
+  game_score.keys.each { |k| game_score[k] = 0 }
+end
+
 game_score = { PLAYER => 0, COMPUTER => 0 }
 
-system 'clear'
-system 'cls'
+clear_screen
 player_one, player_two = if FIRST_PLAYER.eql? 'choose'
                            select_first_player
                          else
@@ -198,17 +215,14 @@ loop do
   current_player = player_one
 
   tournament_winner = calculate_tournament_winner(game_score)
+
   if tournament_winner
-    if tournament_winner.eql? PLAYER
-      prompt_user 'You won the tournament!. Play another tourney (y/n)?'
-    elsif tournament_winner.eql? COMPUTER
-      prompt_user 'Computer won the tournament. Play another tourney (y/n)?'
-    end
-    game_score.keys.each { |k| game_score[k] = 0 }
+    display_winner_and_prompt_new_tourney(tournament_winner, game_score)
   else
     prompt_user 'Play again? (y/n)?'
   end
-  break unless gets.chomp.downcase.chr.eql? 'y'
+
+  break if user_y_or_n.eql? 'n'
 
   current_player = player_one
 end
