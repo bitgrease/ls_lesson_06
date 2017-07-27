@@ -1,3 +1,4 @@
+require 'pry'
 SUITS_AND_FACES = { d: 'Diamonds', s: 'Spades', c: 'Clubs', h: 'Hearts',
                     a: 'Ace', k: 'King', q: 'Queen', j: 'Jack' }
 
@@ -60,17 +61,11 @@ def show_hand(player_hand, is_dealer=false, reveal=false)
 end
 
 def calculate_ace_value(hand_value_without_aces, ace_count)
-  ace_value = 0
-  until ace_count == 0
-    if hand_value_without_aces > 10
-      ace_value += ace_count * 1
-      ace_count = 0
-    else
-      ace_value += 11
-      ace_count -= 1
-    end
+  if hand_value_without_aces >= 11 || ace_count > 1
+    ace_count * 1
+  else
+    11
   end
-  ace_value
 end
 
 def hand_value(hand)
@@ -125,7 +120,7 @@ def dealer_play(dealer_hand, deck)
 end
 
 def player_win_or_bust?(player_hand)
-  player_hand == 21 || busted?(player_hand)
+  hand_value(player_hand) == 21 || busted?(player_hand)
 end
 
 def find_winner(player_hand, dealer_hand)
