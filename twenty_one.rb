@@ -60,6 +60,10 @@ def show_hand(player_hand, is_dealer=false, reveal=false)
   end
 end
 
+def player_win_or_bust?(player_hand)
+  hand_value(player_hand) == 21 || busted?(player_hand)
+end
+
 def calculate_ace_value(hand_value_without_aces, ace_count)
   if hand_value_without_aces >= 11 || ace_count > 1
     ace_count * 1
@@ -89,47 +93,50 @@ def busted?(card_hand)
   hand_value(card_hand) > 21
 end
 
-def hit_or_stay(player_hand, deck)
-  return if hand_value(player_hand) == 21
-  choice = ''
+def hit_or_stay
   loop do
-    loop do
-      puts 'Hit or Stay? (h or s)'
-      choice = gets.chomp.downcase.chr
-      break if %w[h s].include? choice
-      puts 'Invalid choice!'
-    end
-    
+    puts 'Hit or Stay? (h or s)'
+    choice = gets.chomp.downcase.chr
+    return choice if %w[h s].include? choice
+    puts 'Invalid choice!'
+  end
+end
+
+def player_turn(player_hand, dealer_hand, deck)
+  loop do
+    choice = hit_or_stay
     if choice.eql? 's'
       puts 'You chose to stay.'
       break
     end
     player_hand << deck.pop
     clear_screen
-    show_hand(player_hand)
-    break if busted?(player_hand)
+    show_both_hands(player_hand, dealer_hand)
+    if player_win_or_bust?(player_hand)
+      puts hand_value(player_hand) == 21 ? 'You got 21!' : 'You Bust!'
+      sleep(1)
+      break
+    end
   end
 end
 
-def dealer_play(dealer_hand, deck)
+def dealer_turn(dealer_hand, deck)
   loop do
     if hand_value(dealer_hand) >= 17
       puts busted?(dealer_hand) ? 'Dealer Busted!' : 'Dealer Stays.'
+      sleep 1
       break
     end
     puts 'Dealer hits...'
     sleep 1
     dealer_hand << deck.pop
+    show_hand(dealer_hand, true, true)
   end
-end
-
-def player_win_or_bust?(player_hand)
-  hand_value(player_hand) == 21 || busted?(player_hand)
 end
 
 def find_winner(player_hand, dealer_hand)
   return 'Player' if hand_value(player_hand) == 21 || busted?(dealer_hand)
-  return 'Dealer' if busted?(player_hand) || 
+  return 'Dealer' if busted?(player_hand) ||
                      hand_value(dealer_hand) > hand_value(player_hand)
   'Player'
 end
@@ -140,24 +147,33 @@ def show_winner(player_hand, dealer_hand)
   puts "#{find_winner(player_hand, dealer_hand)} wins."
 end
 
+def show_both_hands(player_hand, dealer_hand, reveal=false)
+  show_hand(player_hand)
+  show_hand(dealer_hand, true, reveal)
+end
+
 loop do
   clear_screen
-  deck = create_shuffled_deck
   player_hand = []
   dealer_hand = []
+  deck = create_shuffled_deck
 
   deal_cards(player_hand, deck, true)
   deal_cards(dealer_hand, deck, true)
-  show_hand(player_hand)
-  show_hand(dealer_hand, true)
-  hit_or_stay(player_hand, deck)
-  show_hand(dealer_hand, true, true)
-  dealer_play(dealer_hand, deck) unless player_win_or_bust?(player_hand) 
-  puts "Busted!" if busted?(player_hand) || busted?(dealer_hand)
+
+  if hand_value(player_hand) != 21
+    show_both_hands(player_hand, dealer_hand)
+    player_turn(player_hand, dealer_hand, deck)
+    clear_screen
+    show_both_hands(player_hand, dealer_hand, true)
+    dealer_turn(dealer_hand, deck) unless player_win_or_bust?(player_hand)
+  else
+    clear_screen
+    show_both_hands(player_hand, dealer_hand, true)
+    puts 'You got 21 on the deal!'
+  end
+
   show_winner(player_hand, dealer_hand)
   puts 'Do you want to play again? (y/n)'
   break if user_y_or_n.eql? 'n'
 end
-
-
-
