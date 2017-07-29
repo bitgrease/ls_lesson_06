@@ -11,7 +11,7 @@ def user_y_or_n
   loop do
     entered_choice = gets.chomp.downcase.chr
     return entered_choice if %w[y n].include? entered_choice
-    prompt_user 'Invalid Choice. Choose "y" or "n".'
+    puts 'Invalid Choice. Choose "y" or "n".'
   end
 end
 
@@ -70,20 +70,19 @@ end
 
 def hand_value(hand)
   ace_count = 0
-  values = []
-  hand.each do |card|
-    if %w[1 2 3 4 5 6 7 8 9 10].include? card[1]
-      values << card[1].to_i
-    elsif %w[k q j].include? card[1]
-      values << 10
+  total_without_aces = 0
+  values = hand.map { |card| card[1] }
+  values.each do |value|
+    if %w[1 2 3 4 5 6 7 8 9 10].include? value
+      total_without_aces += value.to_i
+    elsif %w[k q j].include? value
+      total_without_aces += 10
     else
       ace_count += 1
     end
   end
 
-  total_without_aces = values.reduce(:+)
-  ace_value = calculate_ace_value(total_without_aces, ace_count)
-  total_without_aces + ace_value
+  total_without_aces + calculate_ace_value(total_without_aces, ace_count)
 end
 
 def busted?(card_hand)
@@ -100,7 +99,11 @@ def hit_or_stay(player_hand, deck)
       break if %w[h s].include? choice
       puts 'Invalid choice!'
     end
-    break if choice.eql? 's'
+    
+    if choice.eql? 's'
+      puts 'You chose to stay.'
+      break
+    end
     player_hand << deck.pop
     clear_screen
     show_hand(player_hand)
@@ -109,13 +112,14 @@ def hit_or_stay(player_hand, deck)
 end
 
 def dealer_play(dealer_hand, deck)
-  show_hand(dealer_hand, true, true)
   loop do
-    break if hand_value(dealer_hand) >= 17
+    if hand_value(dealer_hand) >= 17
+      puts busted?(dealer_hand) ? 'Dealer Busted!' : 'Dealer Stays.'
+      break
+    end
     puts 'Dealer hits...'
     sleep 1
     dealer_hand << deck.pop
-    show_hand(dealer_hand, true, true)
   end
 end
 
@@ -144,10 +148,10 @@ loop do
 
   deal_cards(player_hand, deck, true)
   deal_cards(dealer_hand, deck, true)
-
   show_hand(player_hand)
   show_hand(dealer_hand, true)
   hit_or_stay(player_hand, deck)
+  show_hand(dealer_hand, true, true)
   dealer_play(dealer_hand, deck) unless player_win_or_bust?(player_hand) 
   puts "Busted!" if busted?(player_hand) || busted?(dealer_hand)
   show_winner(player_hand, dealer_hand)
