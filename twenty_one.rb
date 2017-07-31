@@ -1,4 +1,3 @@
-require 'pry'
 SUITS_AND_FACES = { d: 'Diamonds', s: 'Spades', c: 'Clubs', h: 'Hearts',
                     a: 'Ace', k: 'King', q: 'Queen', j: 'Jack' }
 
@@ -64,29 +63,23 @@ def player_win_or_bust?(player_hand)
   hand_value(player_hand) == 21 || busted?(player_hand)
 end
 
-def calculate_ace_value(hand_value_without_aces, ace_count)
-  if hand_value_without_aces >= 11 || ace_count > 1
-    ace_count * 1
-  else
-    11
-  end
-end
-
 def hand_value(hand)
-  ace_count = 0
-  total_without_aces = 0
+  total = 0
   values = hand.map { |card| card[1] }
   values.each do |value|
     if %w[1 2 3 4 5 6 7 8 9 10].include? value
-      total_without_aces += value.to_i
+      total += value.to_i
     elsif %w[k q j].include? value
-      total_without_aces += 10
+      total += 10
     else
-      ace_count += 1
+      total += 11
     end
   end
 
-  total_without_aces + calculate_ace_value(total_without_aces, ace_count)
+  values.select { |value| value.eql? 'a' }.count.times do
+    total -= 10 if total > 21
+  end
+  total
 end
 
 def busted?(card_hand)
