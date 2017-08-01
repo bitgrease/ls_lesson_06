@@ -1,9 +1,11 @@
 SUITS_AND_FACES = { d: 'Diamonds', s: 'Spades', c: 'Clubs', h: 'Hearts',
                     a: 'Ace', k: 'King', q: 'Queen', j: 'Jack' }
-TWENTY_ONE = 21
+PERFECT_SCORE = 21
 DEALER_STAY = 17
 FACE_VALUE = 10
 HIGH_ACE = 11
+
+scoreboard = { 'Player' => 0, 'Dealer' => 0, 'Tie' => 0 }
 
 def clear_screen
   system('clear') || system('cls')
@@ -40,7 +42,7 @@ def joinand(cards, separator=',', word='and')
 end
 
 def create_shuffled_deck
-  card_values = %w[a 1 2 3 4 5 6 7 8 9 j k q]
+  card_values = %w[a 2 3 4 5 6 7 8 9 j k q]
   suits = %w[h c s d]
   deck = []
   suits.each do |suit|
@@ -72,7 +74,7 @@ def show_hand(card_hand, player=:player, cards_up=:one)
 end
 
 def player_win_or_bust?(card_total)
-  card_total == TWENTY_ONE || busted?(card_total)
+  card_total == PERFECT_SCORE || busted?(card_total)
 end
 
 def hand_value(hand)
@@ -89,13 +91,13 @@ def hand_value(hand)
   end
 
   values.select { |value| value.eql? 'a' }.count.times do
-    total -= FACE_VALUE if total > TWENTY_ONE
+    total -= FACE_VALUE if total > PERFECT_SCORE
   end
   total
 end
 
 def busted?(card_total)
-  card_total > TWENTY_ONE
+  card_total > PERFECT_SCORE
 end
 
 def hit_or_stay
@@ -107,41 +109,16 @@ def hit_or_stay
   end
 end
 
-def player_turn(player_hand, dealer_hand, deck)
-  loop do
-    choice = hit_or_stay
-    prompt 'You chose to stay.' && break if choice.eql? 's'
-    player_hand << deck.pop
-    card_total = hand_value(player_hand)
-    clear_screen
-    show_both_hands(player_hand, dealer_hand)
-    if player_win_or_bust?(card_total)
-      prompt card_total == TWENTY_ONE ? 'You got 21!' : 'You Bust!'
-      sleep 1
-      break
-    end
-  end
+def deal_to_player(player_hand, deck)
+  player_hand << deck.pop
 end
 
-def dealer_turn(dealer_hand, deck)
-  loop do
-    card_total = hand_value(dealer_hand)
-    if card_total >= DEALER_STAY
-      prompt busted?(card_total) ? 'Dealer Busted!' : 'Dealer Stays.'
-      sleep 1
-      break
-    end
-    prompt 'Dealer hits...'
-    sleep 1
-    dealer_hand << deck.pop
-    show_hand(dealer_hand, :dealer, :two)
-  end
+def deal_to_dealer(dealer_hand, deck)
+  dealer_hand << deck.pop
 end
 
-def find_winner(player_hand, dealer_hand)
-  player_total = hand_value(player_hand)
-  dealer_total = hand_value(dealer_hand)
-  if player_total == TWENTY_ONE || busted?(dealer_total)
+def find_winner(player_total, dealer_total)
+  if player_total == PERFECT_SCORE || busted?(dealer_total)
     return 'Player'
   elsif busted?(player_total) || dealer_total > player_total
     return 'Dealer'
@@ -151,15 +128,50 @@ def find_winner(player_hand, dealer_hand)
   'Player'
 end
 
-def show_winner(player_hand, dealer_hand)
-  prompt "Player has #{hand_value(player_hand)}."
-  prompt "Dealer has #{hand_value(dealer_hand)}."
-  prompt "#{find_winner(player_hand, dealer_hand)} wins."
+def show_winner(player_total, dealer_total)
+  winner = find_winner(player_total, dealer_total)
+  prompt "Player has #{player_total}."
+  prompt "Dealer has #{dealer_total}."
+  prompt "#{winner} wins."
 end
 
 def show_both_hands(player_hand, dealer_hand, cards_up=:one)
   show_hand(player_hand)
   show_hand(dealer_hand, :dealer, cards_up)
+end
+
+def update_scoreboard(winner, scoreboard)
+  if winner.eql? 'Player'
+    scoreboard['Player'] += 1
+  elsif winner.eql? 'Dealer'
+    scoreboard['Dealer'] += 1
+  else
+    scoreboard['Tie'] += 1
+  end
+end
+
+def reset_scoreboard(scoreboard)
+  scoreboard['Player'] = scoreboard['Dealer'] = scoreboard['Tie'] = 0
+end
+
+def find_overall_winner(scoreboard)
+  if scoreboard['Player'] == 5
+    'Player'
+  elsif scoreboard['Dealer'] == 5
+    'Dealer'
+  end
+end
+
+def show_overall_score(scoreboard)
+  prompt "Overall - Player #{scoreboard['Player']} -" \
+          " Dealer #{scoreboard['Dealer']} - Ties #{scoreboard['Tie']}."
+end
+
+def clear_screen_display_scores(player_hand, dealer_hand,
+                                scoreboard, dealer_cards=:one)
+  clear_screen
+  show_overall_score(scoreboard)
+  show_both_hands(player_hand, dealer_hand, dealer_cards)
 end
 
 loop do
@@ -171,21 +183,63 @@ loop do
   deal_cards(player_hand, deck, :initial)
   deal_cards(dealer_hand, deck, :initial)
 
-  if hand_value(player_hand) != TWENTY_ONE
-    show_both_hands(player_hand, dealer_hand)
-    player_turn(player_hand, dealer_hand, deck)
-    clear_screen
-    show_both_hands(player_hand, dealer_hand, :two)
-    unless player_win_or_bust?(hand_value(player_hand))
-      dealer_turn(dealer_hand, deck)
+  player_total = hand_value(player_hand)
+  dealer_total = hand_value(dealer_hand)
+  clear_screen_display_scores(player_hand, dealer_hand, scoreboard)
+
+  until hit_or_stay.eql? 's'
+    if player_total == PERFECT_SCORE
+      prompt 'You got 21!'
+      sleep 1
+      break
     end
-  else
-    clear_screen
-    show_both_hands(player_hand, dealer_hand, :two)
-    prompt 'You got 21 on the deal!'
+
+    deal_to_player(player_hand, deck)
+    player_total = hand_value(player_hand)
+    clear_screen_display_scores(player_hand, dealer_hand, scoreboard)
+
+    if busted? player_total
+      prompt 'Player Busted!'
+      sleep 1
+      break
+    end
   end
 
-  show_winner(player_hand, dealer_hand)
+  clear_screen_display_scores(player_hand, dealer_hand, scoreboard, :two)
+  unless player_win_or_bust?(player_total)
+    until dealer_total >= DEALER_STAY
+      clear_screen_display_scores(player_hand, dealer_hand, scoreboard, :two)
+      deal_to_dealer(dealer_hand, deck)
+      dealer_total = hand_value(dealer_hand)
+      sleep 1
+    end
+
+    clear_screen_display_scores(player_hand, dealer_hand, scoreboard, :two)
+
+    if busted?(dealer_total)
+      prompt 'Dealer Busted!'
+    else
+      prompt 'Dealer Stays.'
+    end
+    sleep 1
+  end
+
+  winner = find_winner(player_total, dealer_total)
+
+  update_scoreboard(winner, scoreboard)
+  clear_screen_display_scores(player_hand, dealer_hand, scoreboard, :two)
+  prompt 'Player Busted!' if busted?(player_total)
+  prompt 'Dealer Busted!' if busted?(dealer_total)
+  show_winner(player_total, dealer_total)
+
+  if find_overall_winner(scoreboard)
+    prompt "#{find_overall_winner(scoreboard)} wins best of 5!"
+    show_overall_score(scoreboard)
+    reset_scoreboard(scoreboard)
+  end
+
   prompt 'Do you want to play again? (y/n)'
   break if user_y_or_n.eql? 'n'
 end
+
+prompt 'Thanks for playing!!'
