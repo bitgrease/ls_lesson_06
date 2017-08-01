@@ -189,7 +189,7 @@ loop do
 
   until hit_or_stay.eql? 's'
     if player_total == PERFECT_SCORE
-      prompt 'You got 21!'
+      prompt "You got #{PERFECT_SCORE}!"
       sleep 1
       break
     end
