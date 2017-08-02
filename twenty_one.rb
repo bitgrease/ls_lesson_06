@@ -18,8 +18,8 @@ end
 def user_y_or_n
   entered_choice = ''
   loop do
-    entered_choice = gets.chomp.downcase.chr
-    return entered_choice if %w[y n].include? entered_choice
+    entered_choice = gets.downcase.chr
+    break entered_choice if %w[y n].include? entered_choice
     prompt 'Invalid Choice. Choose "y" or "n".'
   end
 end
@@ -44,17 +44,11 @@ end
 def create_shuffled_deck
   card_values = %w[a 2 3 4 5 6 7 8 9 j k q]
   suits = %w[h c s d]
-  deck = []
-  suits.each do |suit|
-    card_values.each do |value|
-      deck << [suit, value]
-    end
-  end
-  deck.shuffle
+  suits.product(card_values).shuffle
 end
 
-def deal_cards(card_hand, deck, deal_type=:regular)
-  if deal_type.eql? :initial
+def deal_cards(card_hand, deck, number_of_cards=1)
+  if number_of_cards == 2
     2.times { card_hand << deck.pop }
   else
     card_hand << deck.pop
@@ -103,18 +97,10 @@ end
 def hit_or_stay
   loop do
     prompt 'Hit or Stay? (h or s)'
-    choice = gets.chomp.downcase.chr
+    choice = gets.downcase.chr
     return choice if %w[h s].include? choice
     prompt 'Invalid choice!'
   end
-end
-
-def deal_to_player(player_hand, deck)
-  player_hand << deck.pop
-end
-
-def deal_to_dealer(dealer_hand, deck)
-  dealer_hand << deck.pop
 end
 
 def find_winner(player_total, dealer_total)
@@ -180,8 +166,8 @@ loop do
   dealer_hand = []
   deck = create_shuffled_deck
 
-  deal_cards(player_hand, deck, :initial)
-  deal_cards(dealer_hand, deck, :initial)
+  deal_cards(player_hand, deck, 2)
+  deal_cards(dealer_hand, deck, 2)
 
   player_total = hand_value(player_hand)
   dealer_total = hand_value(dealer_hand)
@@ -194,7 +180,7 @@ loop do
       break
     end
 
-    deal_to_player(player_hand, deck)
+    deal_cards(player_hand, deck)
     player_total = hand_value(player_hand)
     clear_screen_display_scores(player_hand, dealer_hand, scoreboard)
 
@@ -209,7 +195,7 @@ loop do
   unless player_win_or_bust?(player_total)
     until dealer_total >= DEALER_STAY
       clear_screen_display_scores(player_hand, dealer_hand, scoreboard, :two)
-      deal_to_dealer(dealer_hand, deck)
+      deal_cards(dealer_hand, deck)
       dealer_total = hand_value(dealer_hand)
       sleep 1
     end
